@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from typing import List, Callable, Awaitable, Dict, Any
+from typing import List, Callable, Awaitable, Dict, Any, Optional, Union
 from dataclasses import dataclass
 
 
@@ -26,7 +26,7 @@ async def detect_fake_async(
     task_fn: Callable[[], Awaitable[Any]],
     total_tasks: int = 1000,
     blocking_tasks: int = 1,
-    blocking_fn: Callable[[], Awaitable[Any]] | None = None,
+    blocking_fn: Optional[Callable[[], Awaitable[Any]]] = None,
 ) -> DetectorResults:
     """
     Detect fake async implementations by measuring event loop behavior.
@@ -78,18 +78,21 @@ async def detect_fake_async(
     
     async def run_single_task(task_id: int):
         """Run a single I/O task and track its latency."""
+        nonlocal successful_tasks, failed_tasks
         start_time = time.perf_counter()
         try:
-            await task_fn()
+            result = await task_fn()
             end_time = time.perf_counter()
             latency = end_time - start_time
             task_latencies.append(latency)
             successful_tasks += 1
-        except Exception:
+            return result
+        except Exception as e:
             failed_tasks += 1
             end_time = time.perf_counter()
             latency = end_time - start_time
             task_latencies.append(latency)
+            # Re-raise to be collected by gather
             raise
     
     # Start all I/O tasks concurrently
