@@ -35,7 +35,6 @@ ENV/
 .DS_Store
 Thumbs.db
 
-
 # Local testing artifacts
 test_artifacts/
-LICENSE.tmp
+.LICENSE.backup
